@@ -9,6 +9,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Resources\ReportCollection;
 use App\Http\Resources\ReportMessageCollection;
 use App\Http\Resources\ReportResource;
@@ -60,7 +61,51 @@ class ReportController extends Controller
 
         $case->reports()->save($report);
 
-        return response(null, 201);
+        return response()->json($report, 201);
+    }
+
+    /**
+     * Upload raw binary audio data and link it to the specified report.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadAudio(Request $request, $id)
+    {
+        try {
+            // 1. Find the report
+            $report = Report::findOrFail($id);
+
+            // 2. Get raw binary data from ESP32 body
+            $audioData = $request->getContent();
+
+            if (!$audioData) {
+                return response()->json(['error' => 'No data'], 400);
+            }
+
+            // 3. Define the path
+            $fileName = 'voice_report_' . $id . '_' . time() . '.wav';
+            $path = 'reports/audio/' . $fileName;
+
+            // 4. Store the file on the 'public' disk
+            Storage::disk('public')->put($path, $audioData);
+
+            // 5. Update the database with the public URL
+            $report->audio_url = Storage::url($path);
+            $report->save();
+
+            return response()->json([
+                'status' => 'success',
+                'id' => $id,
+                'url' => $report->audio_url
+            ], 200);
+
+        } catch (\Exception $e) {
+            // This will print the actual error to your Laravel logs
+            \Log::error("Audio Upload Failed: " . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

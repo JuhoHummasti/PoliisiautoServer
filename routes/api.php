@@ -78,6 +78,7 @@ Route::prefix('v1')->group(function () use ($ctrl) {
         Route::delete('reports/{id}',                   [$ctrl['Report'], 'destroy']);              //< delete a report; accessible by: teachers + student (reporter)
         Route::get('reports/{id}/messages',             [$ctrl['Report'], 'messages']);             //< list all report messages in the report; accessible by: teachers
         Route::put('reports/{id}/update-case',          [$ctrl['Report'], 'updateCase']);           //< update the case of the report; accessible by: teachers
+        Route::post('reports/{id}/audio',               [$ctrl['Report'], 'uploadAudio']);          //< upload audio recording address to the report; accessible by: teachers
         Route::post('reports',                          [$ctrl['Report'], 'storeToNewCase']);       //< store a new report to a new case; accessible by: teachers + student (reporter)
 
         // Report message
